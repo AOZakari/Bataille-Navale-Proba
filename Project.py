@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plot
+import random 
 
 pieces = [("Vide", 0), ("Porte-Avion", 5), ("Croiseur", 4), ("Contre-Torpilleur", 3), ("Sous-Marin", 3), ("Torpilleur", 2)]
 plateau = [[0 for i in range(10)] for i in range(10)]
@@ -40,7 +41,7 @@ def peut_placer(grille, bateau, position, direction):
             if (position[1]+i>9):
                 print("Out of bounds")
                 return False
-            if (grille[position[0], position[1]+i]!=0):
+            if (grille[position[0]][position[1]+i]!=0):
                 print("Ship already in place")
                 return False
         return True
@@ -50,7 +51,7 @@ def peut_placer(grille, bateau, position, direction):
             if (position[0]+i>9):
                 print("Out of bounds")
                 return False
-            if (grille[position[0]+i, position[1]]!=0):
+            if (grille[position[0]+i][position[1]]!=0):
                 print("Ship already in place")
                 return False
         return True
@@ -86,8 +87,45 @@ def place(grille, bateau, position, direction):
         print("Can't deploy ship")
     
 
+def place_alea(grille, bateau):
+    """
+    Deploys a ship randomly
+    input:  
+        int[][] grille:
+            Game board, first index is lines, second is columns.
+        int bateau:
+            Type of ship as defined in tab "plateau"
+    """ 
+    p = (random.randint(0, 9), random.randint(0,9))
+    d = random.randint(1, 2)
+    while peut_placer(grille, bateau, p, d) == False:
+        p = (random.randint(0, 9), random.randint(0,9))
+        d = random.randint(1, 2)
+    place(grille, bateau, p, d)
+
 def affiche(grille):
     plot.imshow(grille)
     plot.show()
 
-affiche(plateau)
+def eq(grilleA, grilleB):
+    """
+    Check if the game boards are identical
+    input:
+        int[][] grilleA:
+            Game board number one
+        int[][] grilleB:
+            Game board number two
+    """
+    return grilleA == grilleB
+
+def genere_grille():
+    """ 
+    generate the game board with randomly deployed ships
+    """
+    grille = plateau
+    for bateau in pieces:
+        place_alea(grille, bateau[1])
+    affiche(grille)
+    
+
+genere_grille()
