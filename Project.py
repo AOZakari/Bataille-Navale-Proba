@@ -1,7 +1,9 @@
 import time
-import matplotlib.pyplot as plot
+import matplotlib.pyplot as plt
 import random 
 import copy
+
+# PARTIE 1:
 
 pieces = [("Vide", 0), ("Porte-Avion", 5), ("Croiseur", 4), ("Contre-Torpilleur", 3), ("Sous-Marin", 3), ("Torpilleur", 2)]
 pieces_1 = [("Vide", 0), ("Porte-Avion", 5)]
@@ -61,6 +63,7 @@ def peut_placer(grille, bateau, position, direction):
                 return False
         return True
 
+
 def place(grille, bateau, position, direction):
     """
     Deploys a ship.
@@ -110,8 +113,8 @@ def place_alea(grille, bateau):
     place(grille, bateau, p, d)
 
 def affiche(grille):
-    plot.imshow(grille)
-    plot.show()
+    plt.imshow(grille)
+    plt.show()
 
 def eq(grilleA, grilleB):
     """
@@ -132,7 +135,11 @@ def genere_grille():
     for bateau in range(1,len(pieces)):
         place_alea(grille, bateau)
     return grille
-    
+
+# PARTIE 2:
+
+# QUESTION 2 - Façons de placer un bateau: 
+
 def denobrement_bateau(bateau, grille):
     nb = 0
     size = len(grille)
@@ -143,6 +150,8 @@ def denobrement_bateau(bateau, grille):
             if peut_placer(grille, bateau, (i,j), 2):
                 nb+=1
     return nb
+
+# QUESTION 3 - Façons de placer une liste de bateaux: 
 
 def denobrement_liste_bateau(liste_bateau, grille, bateau=1):
     nb = 0
@@ -165,6 +174,8 @@ def denobrement_liste_bateau(liste_bateau, grille, bateau=1):
                     nb += denobrement_liste_bateau(liste_bateau, gc, bateau+1)
     return nb
 
+# QUESTION 4:
+
 def nb_grille(grille):
     nb = 0
     p = eq(grille, genere_grille())
@@ -172,6 +183,8 @@ def nb_grille(grille):
         nb += 1
         p = eq(grille, genere_grille())
     return nb
+
+# PARTIE 3:
 
 class Bataille:
     def __init__(self, plateau = genere_grille()):
@@ -190,17 +203,17 @@ class Bataille:
             self.touched[self.pieces[bateau][0]].add(position)
             if bateau > 0:
                 if self.touched[self.pieces[bateau][0]] == self.positions_pieces[self.pieces[bateau][0]]:
-                    print("Coulé!")
+                    #print("Coulé!")
                     self.alive -= 1
-                    return (self.victoire(),2)
+                    return (self.victoire(),2, bateau)
                 else:
-                    print("Touché!")
-                    return (self.victoire(),1)
+                    #print("Touché!")
+                    return (self.victoire(),1, 0)
             return (False, 0)
     
     def victoire(self):
         if self.alive == 0:
-            print("VICTOIRE!")
+            #print("VICTOIRE!")
             return True
         return False
     
@@ -212,6 +225,11 @@ class Joueur_Alea:
     def __init__(self):
         self.vict = False
         self.played = set()
+
+    def reset(self):
+        self.vict = False
+        self.played = set()
+
     def joue(self, bataille):
         turns = 0
         while (not self.vict):
@@ -228,27 +246,36 @@ class Joueur_Alea:
 class Joueur_heuristique:
     
     def __init__(self):
-        self.vict=False
+        self.vict= False
         self.played = set()
-        last_pos = (0,0)
+        self.last_pos = (0,0)
+        self.direction = 0
+
+    def reset(self): 
+        self.vict= False
+        self.played = set()
+        self.last_pos = (0,0)
+        self.direction = 0
+
     def joue(self, bataille):
         turns = 0
         found = 0
-        direction = 0
         while (not self.vict):
-            turn = self.tour(bataille, found, direction)
+            turn = self.tour(bataille, found)
+            found = turn[1]
             if (self.last_pos not in self.played):
                 self.played.add(self.last_pos)
+
                 turns+=1
             if (found>0):
                 if turn[1]==0:
-                    direction = (direction + 1)%4
+                    self.direction = (self.direction + 1)%4
                 elif found == 2:
                     found = 0
             self.vict = turn[0]
         return turns
     
-    def tour(self, bataille, found, direction):
+    def tour(self, bataille, found):
         
         if found==0:
 
@@ -259,43 +286,235 @@ class Joueur_heuristique:
 
         else:
             #Up
-            if bataille.direction == 0:
+            if self.direction == 0:
                 position = self.last_pos
                 if position[0]>0:
-                    position[0] = position[0]-1
+                    position = (position[0]-1,position[1])
                 else: 
-                    bataille.direction = (bataille.direction + 1)%4
+                    self.direction = (self.direction + 1)%4
 
             #Right
-            if bataille.direction == 1:
+            if self.direction == 1:
                 position = self.last_pos
                 if position[1]<9:
-                    position[1] = position[1]+1
+                    position = (position[0],position[1]+1)
                 else: 
-                    bataille.direction = (bataille.direction + 1)%4
+                    self.direction = (self.direction + 1)%4
             #Down
-            if bataille.direction == 2:
+            if self.direction == 2:
                 position = self.last_pos
                 if position[0]<9:
-                    position[0] = position[0]+1
+                    position = (position[0]+1,position[1])
                 else: 
-                    bataille.direction = (bataille.direction + 1)%4
+                    self.direction = (self.direction + 1)%4
             #Left
-            if bataille.direction == 3:
+            if self.direction == 3:
                 position = self.last_pos
-                position[1] = position[1]-1
+                position = (position[0],position[1]-1)
             self.last_pos = position
 
             return bataille.joue(position)     
 
 
-bat = Bataille()
+class Joueur_Proba:
+    
+    def __init__(self):
+        self.left ={1, 2, 3, 4, 5}
+        self.vict = False
+        self.played = set()
+        self.touched = set()
+        self.last_pos = (0,0)
+        self.grille = plateau_vide = [[0 for i in range(10)] for i in range(10)]
 
+    def reset(self):
+        self.left ={1, 2, 3, 4, 5}
+        self.vict = False
+        self.played = set()
+        self.touched = set()
+        self.last_pos = (0,0)
+        self.grille = plateau_vide = [[0 for i in range(10)] for i in range(10)]
+
+    def joue(self, bataille):
+
+        turns = 0
+        while (not self.vict):
+            turns += 1
+            curr_turn = self.tour(bataille)
+            if curr_turn[1]>0:
+                self.touched.add(self.last_pos)
+                if curr_turn[1] == 2 :
+                    self.left.remove(curr_turn[2])
+            self.vict = curr_turn[0]
+        return turns
+
+    def tour (self, bataille):
+        grille_proba = [[0 for i in range(10)] for i in range(10)]
+        for bateau in self.left:
+            size_bateau = bataille.pieces[bateau][1]
+            for direction in [1,2]:
+                for i in range(10):
+                    for j in range(10):
+                        if peut_placer(self.grille, bateau, (i,j), direction):
+                            if (direction == 2):
+                                for k in range(bataille.pieces[bateau][1]):
+                                    grille_proba[i+k][j] += 1
+                            else:
+                                for k in range(bataille.pieces[bateau][1]):
+                                    grille_proba[i][j+k] += 1
+
+        pos_plus_proba = (random.randint(0,9), random.randint(0,9))
+        while pos_plus_proba in self.played:
+            pos_plus_proba = (random.randint(0,9), random.randint(0,9))
+        for i in range(10):
+            for j in range(10):
+                if grille_proba[i][j]>grille_proba[pos_plus_proba[0]][pos_plus_proba[1]]:
+                    pos_plus_proba = (i,j)
+        self.played.add(pos_plus_proba)
+        self.grille[pos_plus_proba[0]][pos_plus_proba[1]] = 1
+        last_pos = pos_plus_proba
+        return bataille.joue(pos_plus_proba)
+
+
+class Joueur_Proba_Heuristique:
+    
+    def __init__(self):
+        self.left ={1, 2, 3, 4, 5}
+        self.vict = False
+        self.played = set()
+        self.touched = set()
+        self.last_pos = (0,0)
+        self.grille = plateau_vide = [[0 for i in range(10)] for i in range(10)]
+        self.direction = 0
+
+    def reset(self):
+        self.left ={1, 2, 3, 4, 5}
+        self.vict = False
+        self.played = set()
+        self.touched = set()
+        self.last_pos = (0,0)
+        self.grille = plateau_vide = [[0 for i in range(10)] for i in range(10)]
+        self.direction = 0
+
+    def joue(self, bataille):
+        found = 0
+        turns = 0
+        while (not self.vict):
+            curr_turn = self.tour(bataille, found)
+            found = curr_turn[1]
+            
+            if (self.last_pos not in self.played):
+                self.played.add(self.last_pos)
+                self.grille[self.last_pos[0]][self.last_pos[1]] = 1
+                turns += 1
+
+            if (found>0):
+                if curr_turn[1]==0:
+                    self.direction = (self.direction + 1)%4
+                elif found == 2:
+                    if curr_turn[2] in self.left:
+                        self.left.remove(curr_turn[2])
+                    found = 0
+            else:
+                if curr_turn[1]>0:
+                    self.touched.add(self.last_pos)
+                    if curr_turn[1] == 2 :
+                        self.left.remove(curr_turn[2])
+            self.vict = curr_turn[0]
+        return turns
+
+    def tour (self, bataille, found):
+        if found==0:
+            grille_proba = [[0 for i in range(10)] for i in range(10)]
+            for bateau in self.left:
+                size_bateau = bataille.pieces[bateau][1]
+                for direction in [1,2]:
+                    for i in range(10):
+                        for j in range(10):
+                            if peut_placer(self.grille, bateau, (i,j), direction):
+                                if (direction == 2):
+                                    for k in range(bataille.pieces[bateau][1]):
+                                        grille_proba[i+k][j] += 1
+                                else:
+                                    for k in range(bataille.pieces[bateau][1]):
+                                        grille_proba[i][j+k] += 1
+
+            pos_plus_proba = (random.randint(0,9), random.randint(0,9))
+            while pos_plus_proba in self.played:
+                pos_plus_proba = (random.randint(0,9), random.randint(0,9))
+            for i in range(10):
+                for j in range(10):
+                    if grille_proba[i][j]>grille_proba[pos_plus_proba[0]][pos_plus_proba[1]]:
+                        pos_plus_proba = (i,j)
+            self.grille[pos_plus_proba[0]][pos_plus_proba[1]] = 1
+            self.last_pos = pos_plus_proba
+            
+            return bataille.joue(pos_plus_proba)
+
+        else:
+            #Up
+            if self.direction == 0:
+                position = self.last_pos
+                if position[0]>0:
+                    position = (position[0]-1,position[1])
+                else: 
+                    self.direction = (self.direction + 1)%4
+
+            #Right
+            if self.direction == 1:
+                position = self.last_pos
+                if position[1]<9:
+                    position = (position[0],position[1]+1)
+                else: 
+                    self.direction = (self.direction + 1)%4
+            #Down
+            if self.direction == 2:
+                position = self.last_pos
+                if position[0]<9:
+                    position = (position[0]+1,position[1])
+                else: 
+                    self.direction = (self.direction + 1)%4
+            #Left
+            if self.direction == 3:
+                position = self.last_pos
+                position = (position[0],position[1]-1)
+            self.last_pos = position
+            return bataille.joue(position)
+            
+
+# TESTS : 
+
+bat = Bataille()
 print(bat.positions_pieces[bat.pieces[1][0]])
 affiche(bat.grille)
 
-dumbo = Joueur_Alea()
-kindasm = Joueur_heuristique()
-#print(dumbo.joue(bat))
-#bat.reset()
-print(kindasm.joue(bat))
+
+
+# GRAPHIQUES
+
+bat = Bataille()
+Players = [Joueur_Alea(), Joueur_heuristique(), Joueur_Proba(), Joueur_Proba_Heuristique()]
+for player in range(4):
+    for i in range(1000):
+        res[player].append(Players[player].joue(bat))
+        Players[player].reset()
+        bat.reset()
+
+
+plt.hist(res[0])
+plt.xlabel("Nombre de coups pour la partie")
+plt.ylabel("Répetition")
+plt.show()
+plt.hist(res[1])
+plt.xlabel("Nombre de coups pour la partie")
+plt.ylabel("Répetition")
+plt.show()
+plt.hist(res[2])
+plt.xlabel("Nombre de coups pour la partie")
+plt.ylabel("Répetition")
+plt.show()
+plt.hist(res[3])
+plt.xlabel("Nombre de coups pour la partie")
+plt.ylabel("Répetition")
+plt.show()
+
+
